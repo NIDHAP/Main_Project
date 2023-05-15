@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Image Upload</title>
+  <style>
+    /* Add some basic styles for the upload button and container */
+    .upload-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
+    }
+    
+    .upload-btn {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .upload-btn:hover {
+      background-color: #45a049;
+    }
+    
+    #file-input {
+      display: none; /* Hide the file input initially */
+    }
+  </style>
+</head>
+<body>
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div class="upload-container">
+    <h2>Upload an Image</h2>
+    <form action="{% url 'upload' %}" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <label for="file-input" class="upload-btn">Select File</label>
+      <input id="file-input" type="file" name="file" />
+      <button type="submit" class="upload-btn">Click to Upload</button>
+    </form>
+  </div>
+  {% if show_popup %}
+    <script>
+        // Show the pop-up message
+        var userChoice = confirm("Do you want to apply Zero Watermark?");
+
+        // If the user chooses to apply Zero Watermark
+        if (userChoice) {
+            // Redirect to the Zero Watermark page
+            window.location.href = "{% url 'zerowatermark' %}";
+        }
+    </script>
+{% endif %}
+</body>
+</html>
