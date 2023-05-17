@@ -1,62 +1,166 @@
-<!DOCTYPE html>
+{% load static %} 
 <html>
 <head>
-  <title>Image Upload</title>
-  <style>
-    /* Add some basic styles for the upload button and container */
-    .upload-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 50px;
-    }
+    <title>Image Upload</title>
+    <style>
+        body         
+        {   
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('{% static "images/background.jpg" %}');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-attachment: fixed;
+            background-size: cover;
+        }
+        
+        .project-name {
+            text-align: center;
+            color: #333;
+            font-size: 30px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            
+        }
+
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border: 2px dashed #333;
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .upload-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background-color: #45a049;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .image-preview {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .image-preview-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .image-preview img {
+            max-width: 400px;
+            max-height: 400px;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .loader {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+        }
     
-    .upload-btn {
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-    }
+        .loader-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
     
-    .upload-btn:hover {
-      background-color: #45a049;
-    }
-    
-    #file-input {
-      display: none; /* Hide the file input initially */
-    }
-  </style>
+        .loader-text {
+            color: #fff;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
-  {% if messages %}
-    <ul class="messages">
-      {% for message in messages %}
-        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
+    <div class="upload-container">
+        <h1 class="project-name">Zero WaterMarking Based on Visual Cryptography and Image Fusion</h1>
+        <h1>Image Upload</h1>
+        <div class="upload-form">
+            <form action="{% url 'upload' %}" method="post" enctype="multipart/form-data" id="upload-form">
+                {% csrf_token %}
+                <label for="file-input" class="upload-btn">Select Image</label>
+                <input id="file-input" type="file" name="file" />
+                <button type="submit" class="upload-btn">Upload</button>
+            </form>
+        </div>
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
 
-  <div class="upload-container">
-    <h2>Upload an Image</h2>
-    <form action="{% url 'upload' %}" method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      <label for="file-input" class="upload-btn">Select File</label>
-      <input id="file-input" type="file" name="file" />
-      <button type="submit" class="upload-btn">Click to Upload</button>
-    </form>
-  </div>
-  {% if show_popup %}
+        {% if shared1 and shared2 %}
+            <h2>Generated Shared Images</h2>
+            <div class="shared-images">
+                <img src="{{ shared1 }}" alt="Public Shared Image">
+                <img src="{{ shared2 }}" alt="Private Shared Image">
+            </div>
+        {% endif %}
+    </div>
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <span class="loader-text">Loading...</span>
+        </div>
+    </div>
+    {% if show_popup %}
     <script>
-        // Show the pop-up message
-        var userChoice = confirm("Do you want to apply Zero Watermark?");
-
-        // If the user chooses to apply Zero Watermark
-        if (userChoice) {
-            // Redirect to the Zero Watermark page
-            window.location.href = "{% url 'zerowatermark' %}";
-        }
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                var confirmPopup = confirm('Are you sure you want to proceed?');
+                if (confirmPopup) {
+                    document.getElementById('ok-form').submit();
+                }
+            }, 1000);  // 5 seconds delay
+        });
     </script>
+    
+    <form method="post" action="{% url 'upload' %}" id="ok-form">
+        {% csrf_token %}
+        <input type="hidden" name="ok_button" value="clicked">
+    </form>
+    {% endif %}
+
+    {% if show_image %}
+    <h2>Generated Zero Watermark Image</h2>
+    <div class="image-preview-container">
+        <img src="{{ zero_watermark_path }}" alt="Zero Watermark Image" class="image-preview">
+    </div>
 {% endif %}
 </body>
 </html>

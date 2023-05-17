@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from myapp.models import UploadedFile
+from .models import ZeroWatermark
 import cv2
 import numpy as np
 import pywt
@@ -95,16 +96,6 @@ feature_image = cv2.resize(feature_image,(256,256))
 cv2.imwrite('E:/S4/Project/Main Project/images/new_feature_image.jpg', feature_image)
 print(feature_image)
 
-def upload(request):
-    if request.method == 'POST':
-        file = request.FILES.get('file')
-        if file:
-            uploaded_file = UploadedFile(file=file)
-            uploaded_file.save()
-            messages.success(request, 'File uploaded successfully!')
-    latest_shared_images = generate_shared_images()
-    return render(request, 'upload.html', {'shared1': latest_shared_images[0], 'shared2': latest_shared_images[1]})
-
 def generate_shared_images():
     logo_image = read_latest_uploaded_image()
     if logo_image is not None:
@@ -140,3 +131,63 @@ def read_latest_uploaded_image():
         return logo_image
     except:
         return None
+
+def generate_zero_watermark():
+    # Load feature image
+    feature_image = cv2.imread('E:/S4/Project/Main Project/images/new_feature_image.jpg')
+
+    # Obtain binary representation of feature image
+    feature_image_bin = np.unpackbits(feature_image)
+
+    # Load shared images
+    shared2 = cv2.imread('E:/S4/Project/Main Project/images/new_shared2.jpg')
+
+    # shared2_reshaped = shared2.reshape(-1, 1)[:feature_image_bin.size].reshape(feature_image_bin.shape)
+    feature_image = cv2.resize(feature_image, (512, 512))
+    shared2 = cv2.resize(shared2, (512, 512))
+
+    # zero_watermark = cv2.bitwise_xor(feature_image_bin, shared2_reshaped)
+    zero_watermark = cv2.bitwise_xor(feature_image, shared2)
+
+    # Save zero-watermark image
+    zero_watermark = 'E:/S4/Project/Main Project/images/new_zero_watermark.jpg'
+    zero_watermark_path = '{% static "images/background.jpg" %}'
+    cv2.imwrite(zero_watermark_path, zero_watermark)
+
+    return zero_watermark_path
+
+from .models import ZeroWatermark
+
+def upload(request):
+    context = {
+        'zero_watermark_path': None,
+        'show_popup': False,
+        'show_image': False,
+    }
+
+    if request.method == 'POST':
+        file = request.FILES.get('file')
+        if file:
+            uploaded_file = UploadedFile(file=file)
+            uploaded_file.save()
+            messages.success(request, 'File uploaded successfully!')
+            latest_shared_images = generate_shared_images()
+            zero_watermark_path = generate_zero_watermark()
+
+            # Save zero-watermark image to database
+            zero_watermark = ZeroWatermark.objects.create(image=zero_watermark_path)
+
+            context['zero_watermark_path'] = zero_watermark.image.url
+            context['show_popup'] = True
+
+    latest_shared_images = generate_shared_images()
+    context['shared1'] = latest_shared_images[0]
+    context['shared2'] = latest_shared_images[1]
+
+    if request.POST.get('ok_button'):
+        context['show_image'] = True
+        # Fetch the latest zero-watermark image from the database
+        latest_zero_watermark = ZeroWatermark.objects.latest('created_at')
+        context['zero_watermark_path'] = latest_zero_watermark.image.url
+
+    return render(request, 'upload.html', context)
