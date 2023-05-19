@@ -4,9 +4,3 @@ class UploadedFile(models.Model):
     file = models.FileField(upload_to='uploads/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
-class ZeroWatermark(models.Model):
-    image = models.ImageField(upload_to='zero_watermarks/')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return str(self.created_at)

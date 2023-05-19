@@ -1,13 +1,17 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from myapp.models import UploadedFile
-from .models import ZeroWatermark
+from django.conf import settings
+from django.templatetags.static import static
+import shutil
+import os
 import cv2
 import numpy as np
 import pywt
 from skimage import io, exposure, color, transform
 from Crypto.Random import get_random_bytes
 import random
+
 
 # Load the four original images in grayscale mode
 image1 = cv2.imread('E:/S4/Project/Main Project/images/1.jpeg', cv2.IMREAD_GRAYSCALE)
@@ -149,14 +153,15 @@ def generate_zero_watermark():
     # zero_watermark = cv2.bitwise_xor(feature_image_bin, shared2_reshaped)
     zero_watermark = cv2.bitwise_xor(feature_image, shared2)
 
-    # Save zero-watermark image
-    zero_watermark = 'E:/S4/Project/Main Project/images/new_zero_watermark.jpg'
-    zero_watermark_path = '{% static "images/background.jpg" %}'
-    cv2.imwrite(zero_watermark_path, zero_watermark)
+    # Save zero-watermark image to local directory
+    local_zero_watermark_path = 'E:/S4/Project/Main Project/images/new_zero_watermark.jpg'
+    cv2.imwrite(local_zero_watermark_path, zero_watermark)
 
-    return zero_watermark_path
+    # Save zero-watermark image to static directory
+    static_zero_watermark_path = os.path.join(settings.STATICFILES_DIRS[0], 'images/new_zero_watermark.jpg')
+    shutil.copyfile(local_zero_watermark_path, static_zero_watermark_path)
 
-from .models import ZeroWatermark
+    return local_zero_watermark_path, static_zero_watermark_path
 
 def upload(request):
     context = {
@@ -172,22 +177,21 @@ def upload(request):
             uploaded_file.save()
             messages.success(request, 'File uploaded successfully!')
             latest_shared_images = generate_shared_images()
-            zero_watermark_path = generate_zero_watermark()
+            local_zero_watermark_path, static_zero_watermark_path = generate_zero_watermark()
 
-            # Save zero-watermark image to database
-            zero_watermark = ZeroWatermark.objects.create(image=zero_watermark_path)
-
-            context['zero_watermark_path'] = zero_watermark.image.url
-            context['show_popup'] = True
+            if static_zero_watermark_path:
+                # Use the static() method to get the static URL for the image
+                context['zero_watermark_path'] = static(static_zero_watermark_path)
+                context['show_popup'] = True
 
     latest_shared_images = generate_shared_images()
     context['shared1'] = latest_shared_images[0]
     context['shared2'] = latest_shared_images[1]
 
     if request.POST.get('ok_button'):
+        # Use the static() method to get the static URL for the image
         context['show_image'] = True
-        # Fetch the latest zero-watermark image from the database
-        latest_zero_watermark = ZeroWatermark.objects.latest('created_at')
-        context['zero_watermark_path'] = latest_zero_watermark.image.url
+        context['zero_watermark_path'] = static('images/new_zero_watermark.jpg')
 
     return render(request, 'upload.html', context)
+

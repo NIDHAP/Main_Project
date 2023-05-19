@@ -156,11 +156,11 @@
     </form>
     {% endif %}
 
-    {% if show_image %}
-    <h2>Generated Zero Watermark Image</h2>
-    <div class="image-preview-container">
-        <img src="{{ zero_watermark_path }}" alt="Zero Watermark Image" class="image-preview">
-    </div>
+{% if show_image %}
+<div class="image-preview-container">
+<h2>Generated Zero Watermark Image</h2>
+    <img id="zero-watermark-image" src="{{ zero_watermark_path }}" alt="Zero Watermark Image">
+</div>
 {% endif %}
 </body>
 </html>
