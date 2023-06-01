@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import HttpResponse
 from myapp.models import UploadedFile
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.templatetags.static import static
 import shutil
 import os
@@ -11,6 +13,21 @@ import pywt
 from skimage import io, exposure, color, transform
 from Crypto.Random import get_random_bytes
 import random
+
+from django.shortcuts import render
+
+# Create your views here.
+def main_page(request):
+    return render(request,'main.html')
+
+def upload(request):
+    return render(request,'upload.html')
+
+def verify(request):
+    return render(request,'verify.html')
+
+def result(request):
+    return render(request,'result.html')
 
 
 # Load the four original images in grayscale mode
@@ -120,8 +137,8 @@ def generate_shared_images():
         shared2 = cv2.merge((cv2.bitwise_and(logo_image[:,:,0], bitmap2 * 255), cv2.bitwise_and(logo_image[:,:,1], bitmap2 * 255), cv2.bitwise_and(logo_image[:,:,2], bitmap2 * 255)))
 
         # Save shared images
-        cv2.imwrite('E:/S4/Project/Main Project/images/new_shared1.jpg', shared1)
-        cv2.imwrite('E:/S4/Project/Main Project/images/new_shared2.jpg', shared2)
+        cv2.imwrite('E:/S4/Project/Main Project/images/secret.jpg', shared1)
+        cv2.imwrite('E:/S4/Project/Main Project/images/public_shared.jpg', shared2)
 
         return shared1, shared2
     else:
@@ -144,7 +161,7 @@ def generate_zero_watermark():
     feature_image_bin = np.unpackbits(feature_image)
 
     # Load shared images
-    shared2 = cv2.imread('E:/S4/Project/Main Project/images/new_shared2.jpg')
+    shared2 = cv2.imread('E:/S4/Project/Main Project/images/public_shared.jpg')
 
     # shared2_reshaped = shared2.reshape(-1, 1)[:feature_image_bin.size].reshape(feature_image_bin.shape)
     feature_image = cv2.resize(feature_image, (512, 512))
@@ -194,4 +211,73 @@ def upload(request):
         context['zero_watermark_path'] = static('images/new_zero_watermark.jpg')
 
     return render(request, 'upload.html', context)
+
+
+def upload_zerowatermark(request):
+    context = {}
+    
+    if request.method == 'POST':
+        watermark_image_file = request.FILES.get('watermark_image_file')
+        watermark_image_path = default_storage.save(watermark_image_file.name, watermark_image_file)
+        watermark_path = default_storage.path(watermark_image_path)
+        
+        feature_image = cv2.imread('E:/S4/Project/Main Project/images/new_feature_image.jpg')
+        feature_image = cv2.resize(feature_image, (512, 512))
+        
+        # Load the watermark image
+        watermark_image = cv2.imread(watermark_path)
+        watermark_image = cv2.resize(watermark_image, (512, 512))
+        
+        # Perform XOR operation on the binary representation of the feature image and the watermark image
+        recovered_shared = cv2.bitwise_xor(feature_image, watermark_image)
+        
+        # Resize the recovered shared image
+        recovered_shared = cv2.resize(recovered_shared, (512, 512))
+        
+        # Save the recovered shared image to local storage
+        local_recovered_shared = 'E:/S4/Project/Main Project/images/recovered_shared.jpg'
+        cv2.imwrite(local_recovered_shared, recovered_shared)
+
+        # Save zero-watermark image to static directory
+        static_recovered_shared = os.path.join(settings.STATICFILES_DIRS[0], 'images/recovered_shared.jpg')
+        shutil.copyfile(local_recovered_shared, static_recovered_shared)
+        
+        recovered_shared_path = os.path.join(settings.BASE_DIR, 'images/recovered_shared.jpg')
+        context['show_image'] = True
+        context['recovered_shared_path'] = static('images/recovered_shared.jpg')
+
+    return render(request, 'verify.html', context)
+
+def result_logo(request):
+    context = {}
+    
+    if request.method == 'POST':
+        secret_image_file = request.FILES.get('secret_image_file')
+        secret_image_path = default_storage.save(secret_image_file.name, secret_image_file)
+        secret_path = default_storage.path(secret_image_path)
+        
+
+        recovered_shared = cv2.imread('E:/S4/Project/Main Project/images/recovered_shared.jpg')
+        recovered_shared = cv2.resize(recovered_shared, (512, 512))
+        
+        # Resize the images to the same size
+        secret_image = cv2.imread(secret_path)
+        secret_image = cv2.resize(secret_image, (512, 512))
+
+        # Add the shared images
+        recovered_logo = cv2.add(secret_image, recovered_shared)
+
+        # Save the recovered logo image to local storage
+        local_recovered_logo = 'E:/S4/Project/Main Project/images/recovered_logo.jpg'
+        cv2.imwrite(local_recovered_logo, recovered_logo)
+
+        # Save zero-watermark image to static directory
+        static_recovered_logo = os.path.join(settings.STATICFILES_DIRS[0], 'images/recovered_logo.jpg')
+        shutil.copyfile(local_recovered_logo, static_recovered_logo)
+        
+        recovered_logo_path = os.path.join(settings.BASE_DIR, 'images/recovered_logo.jpg')
+        context['show_image'] = True
+        context['recovered_logo_path'] = static('images/recovered_logo.jpg')
+
+    return render(request, 'result.html', context)
 

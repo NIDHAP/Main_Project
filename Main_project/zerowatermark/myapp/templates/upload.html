@@ -17,8 +17,8 @@
         
         .project-name {
             text-align: center;
-            color: #333;
-            font-size: 30px;
+            color: #fff;
+            font-size: 40px;
             font-weight: bold;
             margin-top: 20px;
         }
@@ -28,7 +28,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            height: 70vh;
             
         }
 
@@ -39,11 +39,6 @@
             padding: 20px;
             border: 2px dashed #333;
             border-radius: 10px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
         }
 
         .upload-btn {
@@ -103,24 +98,40 @@
             color: #fff;
             font-size: 18px;
         }
+
+        .blink {
+            animation: blinker 1.5s linear infinite;
+            color: red;
+            font-family: sans-serif;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        @keyframes blinker {
+            50% {
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="upload-container">
-        <h1 class="project-name">Zero WaterMarking Based on Visual Cryptography and Image Fusion</h1>
-        <h1>Image Upload</h1>
+        <h1 class="project-name">Logo Upload</h1>
         <div class="upload-form">
             <form action="{% url 'upload' %}" method="post" enctype="multipart/form-data" id="upload-form">
                 {% csrf_token %}
                 <label for="file-input" class="upload-btn">Select Image</label>
-                <input id="file-input" type="file" name="file" />
+                <input id="file-input" type="file" name="file" onchange="showFileName(this)" />
                 <button type="submit" class="upload-btn">Upload</button>
             </form>
+            <div id="file-info">
+                <p id="file-name" style="display: block;color: coral;"></p> <!-- Element to display the selected file name -->
+                <button id="clear-btn" class="clear-btn" style="display: none;" onclick="clearFile()">Clear</button>
+            </div>
         </div>
         {% if messages %}
             <ul class="messages">
                 {% for message in messages %}
-                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %} style="color: coral;">{{ message }}</li>
                 {% endfor %}
             </ul>
         {% endif %}
@@ -158,9 +169,32 @@
 
 {% if show_image %}
 <div class="image-preview-container">
-<h2>Generated Zero Watermark Image</h2>
+<h2 class="project-name">Generated Zero Watermark Image</h2>
     <img id="zero-watermark-image" src="{{ zero_watermark_path }}" alt="Zero Watermark Image">
+    <br>
+    <br>
+    <li class="blink">Secret Image Generated in the System</li>
+    <br>
+    <br>
 </div>
 {% endif %}
+
+<script>
+    function showFileName(input) {
+        var fileName = input.files[0] ? input.files[0].name : ''; // Get the name of the selected file or empty string if no file selected
+        var fileElement = document.getElementById('file-name');
+        fileElement.innerText = 'Selected File: ' + fileName; // Update the text below the button
+        var clearButton = document.getElementById('clear-btn');
+        clearButton.style.display = fileName ? 'block' : 'none'; // Show or hide the clear button based on whether a file is selected
+        fileElement.style.display = fileName ? 'block' : 'none'; // Show or hide the file name based on whether a file is selected
+    }
+
+    function clearFile() {
+        var fileInput = document.getElementById('file-input');
+        fileInput.value = ''; // Clear the selected file
+        showFileName(fileInput); // Update the display
+    }
+</script>
+
 </body>
 </html>
